@@ -48,7 +48,11 @@ namespace vNext.Comparer
         }
 
         private static async Task RunAsync(IDictionary<string, string> args)
-        {            
+        {
+            Console.OutputEncoding = System.Text.Encoding.UTF8;
+            if (Directory.Exists(DbDir))
+                Directory.Delete(DbDir, true);
+
             var dirFiles = Directory.GetFiles(args["DIR"], "*.sql");
             if (dirFiles.Length == 0)
                 throw new ApplicationException("No scripts in DIR path.");
