@@ -15,12 +15,12 @@ namespace vNext.Comparer
 
         private static void Main(string[] args)
         {
+            Console.OutputEncoding = System.Text.Encoding.UTF8;
             var dict = ParseArgs(args);
             ThrowExceptionForInvalidArgs(dict);
             TryRunAsync(dict).Wait();
 
             Console.WriteLine("Done.");
-            //Console.ReadKey();
         }
 
         private static void ThrowExceptionForInvalidArgs(Dictionary<string, string> dict)
@@ -49,9 +49,6 @@ namespace vNext.Comparer
 
         private static async Task RunAsync(IDictionary<string, string> args)
         {
-            Console.OutputEncoding = System.Text.Encoding.UTF8;
-            if (Directory.Exists(DbDir))
-                Directory.Delete(DbDir, true);
 
             var dirFiles = Directory.GetFiles(args["DIR"], "*.sql");
             if (dirFiles.Length == 0)
@@ -80,8 +77,9 @@ namespace vNext.Comparer
 
         private static void ProcDiff(IDictionary<string, string> diff)
         {
-            if (!Directory.Exists(DbDir))
-                Directory.CreateDirectory(DbDir);
+            if (Directory.Exists(DbDir))
+                Directory.Delete(DbDir, true);
+            Directory.CreateDirectory(DbDir);
 
             foreach (var file in diff.Keys)
             {
