@@ -2,9 +2,8 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using vNext.Comparer.Interface;
 
-namespace vNext.Comparer
+namespace vNext.Comparer.Commands
 {
     public static class CommandFactory
     {

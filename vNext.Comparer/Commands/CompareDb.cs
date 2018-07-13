@@ -4,13 +4,14 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-using vNext.Comparer.Interface;
 using vNext.Comparer.Utils;
 
 namespace vNext.Comparer.Commands
 {
     internal class CompareDb : ICommand
     {
+        private const string AllProcQuery =
+            "select distinct SCHEMA_NAME(schema_id) + '.' + name from sys.procedures where type = 'P'";
         private const string LeftDbDir = "leftDb";
         private const string RightDbDir = "rightDb";
         private static string _leftConnectionString;
@@ -24,9 +25,7 @@ namespace vNext.Comparer.Commands
             ThrowExceptionForInvalidArgs(args);
             _leftConnectionString = args["LEFTCONNECTIONSTRING"];
             _rightConnectionString = args["RIGHTCONNECTIONSTRING"];
-            _query = args.ContainsKey("QUERY")
-                ? args["QUERY"]
-                : "select distinct name from sys.procedures where type = 'P'";
+            _query = args.ContainsKey("QUERY") ? args["QUERY"] : AllProcQuery;
             _winmerge = args.ContainsKey("WINMERGE");
         }
 
@@ -42,9 +41,9 @@ namespace vNext.Comparer.Commands
                 throw new ApplicationException("Need to pass argument: LEFTCONNECTIONSTRING");
         }
 
-        public void Execute()
+        public async Task Execute()
         {
-            RunAsync().Wait();
+            await RunAsync();
         }
 
         private static async Task RunAsync()
@@ -79,12 +78,13 @@ namespace vNext.Comparer.Commands
 
         private static async Task<string[]> GetExists(string connectionString)
         {
-            return (await SqlHelper.GetProcedures(connectionString, _query)).ToArray();
+            return (await SqlHelper.GetDbObjects(connectionString, _query)).ToArray();
         }
 
         private static void ProcNotExists(IEnumerable<string> notExists, string rightOrLeft)
         {
-            foreach (var notExist in notExists) Console.WriteLine($"Not in {rightOrLeft} DB    {notExist}");
+            foreach (var notExist in notExists)
+                Console.WriteLine($"Not in {rightOrLeft} DB    {notExist}");
         }
 
         private static async Task<IEnumerable<string>> GetDiff(IEnumerable<string> exists)
@@ -101,6 +101,7 @@ namespace vNext.Comparer.Commands
                 if (leftSqlText == rightSqlText) continue;
 
                 list.Add(procedure);
+
                 WriteInDirectory(leftSqlTextOriginal, LeftDbDir, procedure);
                 WriteInDirectory(rightSqlTextOriginal, RightDbDir, procedure);
             }

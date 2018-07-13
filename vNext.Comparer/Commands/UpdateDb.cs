@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-using vNext.Comparer.Interface;
 using vNext.Comparer.Utils;
 
 namespace vNext.Comparer.Commands
@@ -40,12 +39,12 @@ namespace vNext.Comparer.Commands
                 throw new ApplicationException("Need to pass only DIR or FILE argument");
         }
 
-        public void Execute()
+        public async Task Execute()
         {
             if (_dir != null)
-                RunAsyncDir().Wait();
+                await RunAsyncDir();
             else
-                RunAsyncFile().Wait();
+                await RunAsyncFile();
         }
 
         private static async Task RunAsyncDir()
@@ -71,7 +70,7 @@ namespace vNext.Comparer.Commands
         {
             var objectName = Path.GetFileNameWithoutExtension(_file);
             if (await SqlHelper.IsObjectExists(_connectionstring, objectName))
-                await SqlHelper.AlterProcedure(_connectionstring, await FileHelper.ReadText(_file));
+                await SqlHelper.ExecuteNonQueryScriptAsync(_connectionstring, await FileHelper.ReadText(_file));
             else
                 Console.WriteLine($"Not in DB   {objectName}");
         }
@@ -92,7 +91,7 @@ namespace vNext.Comparer.Commands
         private static async Task ProcExists(IEnumerable<string> exists)
         {
             foreach (var file in exists)
-                await SqlHelper.AlterProcedure(_connectionstring, await FileHelper.ReadText(file));
+                await SqlHelper.ExecuteNonQueryScriptAsync(_connectionstring, await FileHelper.ReadText(file));
         }
 
         private static void ProcNotExists(IEnumerable<string> notExists)

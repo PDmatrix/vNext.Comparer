@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
 using System.Text;
+using vNext.Comparer.Commands;
 
 namespace vNext.Comparer
 {
@@ -14,7 +14,7 @@ namespace vNext.Comparer
             var dict = ParseArgs(args);
             try
             {
-                CommandFactory.Create(dict).Execute();
+                CommandFactory.Create(dict).Execute().Wait();
             }
             catch (Exception e)
             {
