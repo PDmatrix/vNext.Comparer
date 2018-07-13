@@ -4,7 +4,6 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-using vNext.Comparer.Interface;
 using vNext.Comparer.Utils;
 
 namespace vNext.Comparer.Commands
@@ -36,9 +35,9 @@ namespace vNext.Comparer.Commands
                 throw new ApplicationException("Need to pass argument: DIR");
         }
 
-        public void Execute()
+        public async Task Execute()
         {
-            RunAsync().Wait();
+            await RunAsync();
         }
 
         private static async Task RunAsync()

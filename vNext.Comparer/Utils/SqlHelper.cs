@@ -1,43 +1,21 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data.SqlClient;
+using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
-using Microsoft.SqlServer.Management.Common;
-using Microsoft.SqlServer.Management.Smo;
 
 namespace vNext.Comparer.Utils
 {
     public static class SqlHelper
     {
-        private static async Task<int> GetProcedureId(string connectionString, string procedureName)
-        {
-            using (var connection = new SqlConnection(connectionString))
-            {
-                await connection.OpenAsync();
-                var command =
-                    new SqlCommand(
-                        $"select object_id from sys.procedures where name = '{procedureName}' and type = 'P'",
-                        connection);
-                return (int) await command.ExecuteScalarAsync();
-            }
-        }
-
         public static async Task<string> GetObjectDefinition(string connectionString, string objName)
         {
             using (var connection = new SqlConnection(connectionString))
             {
                 await connection.OpenAsync();
                 var command = new SqlCommand($"select OBJECT_DEFINITION(OBJECT_ID('{objName}'))", connection);
-                try
-                {
-                    return (string) await command.ExecuteScalarAsync();
-                }
-                catch (Exception ex)
-                {
-                    command = new SqlCommand(
-                        $"select OBJECT_DEFINITION({await GetProcedureId(connectionString, objName)})", connection);
-                    return (string) await command.ExecuteScalarAsync();
-                }
+                return (string) await command.ExecuteScalarAsync();
             }
         }
 
@@ -52,17 +30,40 @@ namespace vNext.Comparer.Utils
             }
         }
 
-        public static async Task AlterProcedure(string connectionString, string script)
+        public static async Task ExecuteNonQueryScriptAsync(string connectionString, string script)
         {
             using (var connection = new SqlConnection(connectionString))
             {
                 await connection.OpenAsync();
-                var server = new Server(new ServerConnection(connection));
-                server.ConnectionContext.ExecuteNonQuery(script);
+                using (var command = new SqlCommand())
+                {
+                    command.Connection = connection;
+                    foreach (var splitted in SplitSqlStatements(script))
+                    {
+                        command.CommandText = splitted;
+                        await command.ExecuteNonQueryAsync();
+                    }
+                }
             }
         }
 
-        public static async Task<IEnumerable<string>> GetProcedures(string connectionString, string query)
+        private static IEnumerable<string> SplitSqlStatements(string sqlScript)
+        {
+            // Split by "GO" statements
+            var statements = Regex.Split(
+                sqlScript,
+                @"^[\t\r\n]*GO[\t\r\n]*\d*[\t\r\n]*(?:--.*)?$",
+                RegexOptions.Multiline |
+                RegexOptions.IgnorePatternWhitespace |
+                RegexOptions.IgnoreCase);
+
+            // Remove empties, trim, and return
+            return statements
+                .Where(x => !string.IsNullOrWhiteSpace(x))
+                .Select(x => x.Trim(' ', '\r', '\n'));
+        }
+
+        public static async Task<IEnumerable<string>> GetDbObjects(string connectionString, string query)
         {
             using (var connection = new SqlConnection(connectionString))
             {
