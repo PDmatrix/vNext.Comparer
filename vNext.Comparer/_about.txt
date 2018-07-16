@@ -1,1 +1,0 @@
-CONNECTIONSTRING="Data Source=DEV-DB-V-02\SQL2012;Initial Catalog=OmniUS_TEST_108_SE_20180215_4Sanek;Persist Security Info=True;User ID=sa;Password=sa0.123" COMMAND="UpdateDb" dir="src"
