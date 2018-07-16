@@ -73,7 +73,9 @@ namespace vNext.Comparer.Commands
 
             var diff = (await GetDiff(exitstInBoth)).ToArray();
             ProcDiff(diff);
-            ProcWinMerge(diff);
+
+            if (_winmerge && diff.Length >= 1)
+                CompareHelper.ProcWinMerge(diff, LeftDbDir, RightDbDir);
         }
 
         private static async Task<string[]> GetExists(string connectionString)
@@ -87,35 +89,33 @@ namespace vNext.Comparer.Commands
                 Console.WriteLine($"Not in {rightOrLeft} DB    {notExist}");
         }
 
-        private static async Task<IEnumerable<string>> GetDiff(IEnumerable<string> exists)
+        private static async Task<IEnumerable<CompareHelper.Differ>> GetDiff(IEnumerable<string> exists)
         {
-            var list = new List<string>();
-            DirectoryPreparation();
-            foreach (var procedure in exists)
+            var list = new List<CompareHelper.Differ>();
+            foreach (var objectName in exists)
             {
-                var leftSqlTextOriginal = await SqlHelper.GetObjectDefinition(_leftConnectionString, procedure);
-                var rightSqlTextOriginal = await SqlHelper.GetObjectDefinition(_rightConnectionString, procedure);
+                var leftSqlTextOriginal = await SqlHelper.GetObjectDefinition(_leftConnectionString, objectName);
+                var rightSqlTextOriginal = await SqlHelper.GetObjectDefinition(_rightConnectionString, objectName);
                 var leftSqlText = CompareHelper.AdjustForCompare(leftSqlTextOriginal);
                 var rightSqlText = CompareHelper.AdjustForCompare(rightSqlTextOriginal);
 
                 if (leftSqlText == rightSqlText) continue;
 
-                list.Add(procedure);
-
-                WriteInDirectory(leftSqlTextOriginal, LeftDbDir, procedure);
-                WriteInDirectory(rightSqlTextOriginal, RightDbDir, procedure);
+                list.Add(new CompareHelper.Differ(objectName, leftSqlTextOriginal, rightSqlTextOriginal));
             }
-
             return list;
         }
 
-        private static void WriteInDirectory(string textOrig, string directory, string filename)
+        private static void WriteInDirectory(CompareHelper.Differ differ)
         {
-            var path = Path.Combine(directory, filename + ".sql");
-            File.WriteAllText(path, textOrig);
+            var path = Path.Combine(LeftDbDir, differ.ObjectName + ".sql");
+            File.WriteAllText(path, differ.LeftOriginalText);
+
+            path = Path.Combine(RightDbDir, differ.ObjectName + ".sql");
+            File.WriteAllText(path, differ.RightOriginalText);
         }
 
-        private static void DirectoryPreparation()
+        private static void PrepareDirectory()
         {
             if (Directory.Exists(LeftDbDir))
                 Directory.Delete(LeftDbDir, true);
@@ -125,30 +125,13 @@ namespace vNext.Comparer.Commands
             Directory.CreateDirectory(RightDbDir);
         }
 
-        private static void ProcDiff(IEnumerable<string> diff)
+        private static void ProcDiff(IEnumerable<CompareHelper.Differ> diff)
         {
-            foreach (var procedure in diff) Console.WriteLine(@"Diff    {0}", procedure);
-        }
-        
-        private static void ProcWinMerge(IEnumerable<string> diff)
-        {
-            var enumerable = diff as string[] ?? diff.ToArray();
-            if (!_winmerge || !enumerable.Any())
-                return;
-
-            const string winmergeuExe = "winmergeu.exe";
-            if (enumerable.Length == 1)
+            PrepareDirectory();
+            foreach (var differ in diff)
             {
-                var objectName = enumerable.First();
-                var leftFilePath = Path.Combine(LeftDbDir, objectName + ".sql");
-                var rightFilePath = Path.Combine(RightDbDir, objectName + ".sql");
-
-                var arguments = $@"""{leftFilePath}"" ""{rightFilePath}""";
-                Process.Start(winmergeuExe, arguments);
-            }
-            else
-            {
-                Process.Start(winmergeuExe, $"/r {LeftDbDir} {RightDbDir}");
+                Console.WriteLine(@"Diff    {0}", differ.ObjectName);
+                WriteInDirectory(differ);
             }
         }
     }

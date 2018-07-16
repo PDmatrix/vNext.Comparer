@@ -8,7 +8,7 @@ using vNext.Comparer.Utils;
 
 namespace vNext.Comparer.Commands
 {
-    internal class CompareLocal : ICommand
+    public class CompareLocal : ICommand
     {
         private const string DbDir = "db";
         private static string _dir;
@@ -55,11 +55,13 @@ namespace vNext.Comparer.Commands
                 .OrderBy(x => x)
                 .ToArray();
 
-            var diff = await GetDiff(exists);
+            var diff = (await GetDiff(exists)).ToArray();
 
             ProcNotExists(notExists);
             ProcDiff(diff);
-            ProcWinMerge(diff);
+
+            if(_winmerge && diff.Length >= 1)
+                CompareHelper.ProcWinMerge(diff, DbDir, _dir);
         }
 
         private static async Task<string[]> GetNotExists(string connectionString, IEnumerable<string> dirFiles)
@@ -75,21 +77,23 @@ namespace vNext.Comparer.Commands
             return list.ToArray();
         }
 
-        private static async Task<IDictionary<string, string>> GetDiff(IEnumerable<string> exists)
+        private static async Task<IEnumerable<CompareHelper.Differ>> GetDiff(IEnumerable<string> exists)
         {
-            var dictionary = new Dictionary<string, string>();
+            var list = new List<CompareHelper.Differ>();
             foreach (var file in exists)
             {
                 var objectName = Path.GetFileNameWithoutExtension(file);
-                var fileText = CompareHelper.AdjustForCompare(await FileHelper.ReadText(file));
+
+                var fileTextOriginal = await FileHelper.ReadText(file);
+                var fileText = CompareHelper.AdjustForCompare(fileTextOriginal);
                 var sqlTextOriginal = await SqlHelper.GetObjectDefinition(_connectionstring, objectName);
                 var sqlText = CompareHelper.AdjustForCompare(sqlTextOriginal);
 
                 if (sqlText != fileText)
-                    dictionary.Add(file, sqlTextOriginal);
+                    list.Add(new CompareHelper.Differ(objectName, sqlTextOriginal, fileTextOriginal));
             }
 
-            return dictionary;
+            return list;
         }
 
         private static void ProcNotExists(IEnumerable<string> notExists)
@@ -98,39 +102,17 @@ namespace vNext.Comparer.Commands
                 Console.WriteLine(@"Not in DB     {0}", Path.GetFileNameWithoutExtension(file));
         }
 
-        private static void ProcDiff(IDictionary<string, string> diff)
+        private static void ProcDiff(IEnumerable<CompareHelper.Differ> diff)
         {
             if (Directory.Exists(DbDir))
                 Directory.Delete(DbDir, true);
             Directory.CreateDirectory(DbDir);
 
-            foreach (var file in diff.Keys)
+            foreach (var differ in diff)
             {
-                var objectName = Path.GetFileNameWithoutExtension(file);
-                var path = Path.Combine(DbDir, objectName + ".sql");
-                File.WriteAllText(path, diff[file]);
-                Console.WriteLine(@"Diff    {0}", objectName);
-            }
-        }
-
-        private static void ProcWinMerge(IDictionary<string, string> diff)
-        {
-            if (!_winmerge || diff.Count == 0)
-                return;
-
-            const string winmergeuExe = "winmergeu.exe";
-            if (diff.Count == 1)
-            {
-                var objectName = Path.GetFileNameWithoutExtension(diff.Keys.First());
-                var leftFilePath = Path.Combine(DbDir, objectName + ".sql");
-                var rightFilePath = diff.Keys.First();
-
-                var arguments = $@"""{leftFilePath}"" ""{rightFilePath}""";
-                Process.Start(winmergeuExe, arguments);
-            }
-            else
-            {
-                Process.Start(winmergeuExe, $"/r {DbDir} {_dir}");
+                var path = Path.Combine(DbDir, differ.ObjectName + ".sql");
+                File.WriteAllText(path, differ.LeftOriginalText);
+                Console.WriteLine(@"Diff    {0}", differ.ObjectName);
             }
         }
     }

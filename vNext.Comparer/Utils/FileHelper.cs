@@ -26,7 +26,6 @@ namespace vNext.Comparer.Utils
             var fileEncoding = GetEncoding(fileName);
             var bytes = await Read(fileName);
             var utf8Bytes = Encoding.Convert(fileEncoding, Encoding.UTF8, bytes);
-            //return Encoding.UTF8.GetString(utf8Bytes);
             return Equals(fileEncoding, Encoding.Unicode)
                 ? Encoding.UTF8.GetString(utf8Bytes).Remove(0, 1)
                 : Encoding.UTF8.GetString(utf8Bytes);
