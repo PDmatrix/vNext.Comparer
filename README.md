@@ -1,4 +1,6 @@
 # vNext.Comparer
+[![Build Status](https://travis-ci.org/PDmatrix/vNext.Comparer.svg?branch=master)](https://travis-ci.org/PDmatrix/vNext.Comparer)
+
 This utility will help you automate the work with the MS SQL database.
 
 This is a console utility, so you will need to pass arguments through the console.
