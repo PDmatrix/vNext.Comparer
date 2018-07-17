@@ -50,9 +50,11 @@ namespace vNext.Comparer.Commands
         {
             var dirFiles = Directory.GetFiles(_dir, "*.sql");
             if (dirFiles.Length == 0)
+            {
                 throw new FileNotFoundException("No scripts in DIR path.");
+            }
 
-            var notExists = (await GetNotExists(_connectionstring, dirFiles))
+            var notExists = (await GetNotExists(_connectionstring, dirFiles).ConfigureAwait(false))
                 .OrderBy(x => x)
                 .ToArray();
 
@@ -61,7 +63,7 @@ namespace vNext.Comparer.Commands
                 .OrderBy(x => x)
                 .ToArray();
 
-            var diff = (await GetDiff(exists)).ToArray();
+            var diff = (await GetDiff(exists).ConfigureAwait(false)).ToArray();
 
             ProcNotExists(notExists);
             ProcDiff(diff);
@@ -94,9 +96,9 @@ namespace vNext.Comparer.Commands
             {
                 var objectName = Path.GetFileNameWithoutExtension(file);
 
-                var fileTextOriginal = await FileHelper.ReadText(file);
+                var fileTextOriginal = await FileHelper.ReadText(file).ConfigureAwait(false);
                 var fileText = CompareHelper.AdjustForCompare(fileTextOriginal);
-                var sqlTextOriginal = await SqlHelper.GetObjectDefinition(_connectionstring, objectName);
+                var sqlTextOriginal = await SqlHelper.GetObjectDefinition(_connectionstring, objectName).ConfigureAwait(false);
                 var sqlText = CompareHelper.AdjustForCompare(sqlTextOriginal);
 
                 if (sqlText != fileText)

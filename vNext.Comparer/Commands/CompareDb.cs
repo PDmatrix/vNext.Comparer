@@ -54,11 +54,11 @@ namespace vNext.Comparer.Commands
 
         private async Task RunAsync()
         {
-            var existsInLeft = (await GetExists(_leftConnectionString))
+            var existsInLeft = (await GetExists(_leftConnectionString).ConfigureAwait(false))
                 .OrderBy(x => x)
                 .ToArray();
 
-            var existsInRight = (await GetExists(_rightConnectionString))
+            var existsInRight = (await GetExists(_rightConnectionString).ConfigureAwait(false))
                 .OrderBy(x => x)
                 .ToArray();
 
@@ -88,7 +88,7 @@ namespace vNext.Comparer.Commands
 
         private async Task<string[]> GetExists(string connectionString)
         {
-            return (await SqlHelper.GetDbObjects(connectionString, _query)).ToArray();
+            return (await SqlHelper.GetDbObjects(connectionString, _query).ConfigureAwait(false)).ToArray();
         }
 
         private static void ProcNotExists(IEnumerable<string> notExists, string rightOrLeft)
@@ -104,12 +104,15 @@ namespace vNext.Comparer.Commands
             var list = new List<CompareHelper.Differ>();
             foreach (var objectName in exists)
             {
-                var leftSqlTextOriginal = await SqlHelper.GetObjectDefinition(_leftConnectionString, objectName);
-                var rightSqlTextOriginal = await SqlHelper.GetObjectDefinition(_rightConnectionString, objectName);
+                var leftSqlTextOriginal = await SqlHelper.GetObjectDefinition(_leftConnectionString, objectName).ConfigureAwait(false);
+                var rightSqlTextOriginal = await SqlHelper.GetObjectDefinition(_rightConnectionString, objectName).ConfigureAwait(false);
                 var leftSqlText = CompareHelper.AdjustForCompare(leftSqlTextOriginal);
                 var rightSqlText = CompareHelper.AdjustForCompare(rightSqlTextOriginal);
 
-                if (leftSqlText == rightSqlText) continue;
+                if (leftSqlText == rightSqlText)
+                {
+                    continue;
+                }
 
                 list.Add(new CompareHelper.Differ(objectName, leftSqlTextOriginal, rightSqlTextOriginal));
             }
@@ -128,9 +131,15 @@ namespace vNext.Comparer.Commands
         private static void PrepareDirectory()
         {
             if (Directory.Exists(LeftDbDir))
+            {
                 Directory.Delete(LeftDbDir, true);
+            }
+
             if (Directory.Exists(RightDbDir))
+            {
                 Directory.Delete(RightDbDir, true);
+            }
+
             Directory.CreateDirectory(LeftDbDir);
             Directory.CreateDirectory(RightDbDir);
         }

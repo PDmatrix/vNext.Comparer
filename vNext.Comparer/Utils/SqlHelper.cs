@@ -13,9 +13,9 @@ namespace vNext.Comparer.Utils
         {
             using (var connection = new SqlConnection(connectionString))
             {
-                await connection.OpenAsync();
+                await connection.OpenAsync().ConfigureAwait(false);
                 var command = new SqlCommand($"select OBJECT_DEFINITION(OBJECT_ID('{objName}'))", connection);
-                return (string) await command.ExecuteScalarAsync();
+                return (string) await command.ExecuteScalarAsync().ConfigureAwait(false);
             }
         }
 
@@ -23,9 +23,9 @@ namespace vNext.Comparer.Utils
         {
             using (var connection = new SqlConnection(connectionString))
             {
-                await connection.OpenAsync();
+                await connection.OpenAsync().ConfigureAwait(false);
                 var command = new SqlCommand($"select OBJECT_ID('{objName}')", connection);
-                var res = await command.ExecuteScalarAsync();
+                var res = await command.ExecuteScalarAsync().ConfigureAwait(false);
                 return res != null && res != DBNull.Value;
             }
         }
@@ -34,14 +34,14 @@ namespace vNext.Comparer.Utils
         {
             using (var connection = new SqlConnection(connectionString))
             {
-                await connection.OpenAsync();
+                await connection.OpenAsync().ConfigureAwait(false);
                 using (var command = new SqlCommand())
                 {
                     command.Connection = connection;
                     foreach (var splitted in SplitSqlStatements(script))
                     {
                         command.CommandText = splitted;
-                        await command.ExecuteNonQueryAsync();
+                        await command.ExecuteNonQueryAsync().ConfigureAwait(false);
                     }
                 }
             }
@@ -67,10 +67,10 @@ namespace vNext.Comparer.Utils
         {
             using (var connection = new SqlConnection(connectionString))
             {
-                await connection.OpenAsync();
+                await connection.OpenAsync().ConfigureAwait(false);
                 var list = new List<string>();
                 var command = new SqlCommand(query, connection);
-                using (var reader = await command.ExecuteReaderAsync())
+                using (var reader = await command.ExecuteReaderAsync().ConfigureAwait(false))
                 {
                     while (await reader.ReadAsync())
                     {

@@ -25,14 +25,23 @@ namespace vNext.Comparer.Utils
         public static async Task<string> ReadText(string fileName)
         {
             var fileEncoding = GetFileEncoding(fileName);
-            var bytes = await Read(fileName);
+            var bytes = await Read(fileName).ConfigureAwait(false);
             var utf8Bytes = Encoding.Convert(fileEncoding, Encoding.UTF8, bytes);
-            return NormalizeUtf8(fileEncoding, Encoding.UTF8.GetString(utf8Bytes));
+            return NormalizeUtf8(fileEncoding, utf8Bytes);
         }
 
-        private static string NormalizeUtf8(Encoding encoding, string text)
+        private static string NormalizeUtf8(Encoding encoding, byte[] bytes)
         {
-            return !Equals(Encoding.GetEncoding(1251), encoding) ? text.Remove(0, 1) : text;
+            if (Equals(Encoding.Unicode, encoding))
+            {
+                return Encoding.UTF8.GetString(bytes).Remove(0, 1);
+            }
+            if (bytes[0] == 0xEF && bytes[1] == 0xBB && bytes[2] == 0xBF)
+            {
+                return Encoding.UTF8.GetString(bytes).Remove(0, 1);
+            }
+
+            return Encoding.UTF8.GetString(bytes);
         }
 
         private static Encoding GetFileEncoding(string fileName)
