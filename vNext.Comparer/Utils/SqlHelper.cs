@@ -72,7 +72,10 @@ namespace vNext.Comparer.Utils
                 var command = new SqlCommand(query, connection);
                 using (var reader = await command.ExecuteReaderAsync())
                 {
-                    while (await reader.ReadAsync()) list.Add(reader.GetString(0));
+                    while (await reader.ReadAsync())
+                    {
+                        list.Add(reader.GetString(0));
+                    }
                 }
 
                 return list;

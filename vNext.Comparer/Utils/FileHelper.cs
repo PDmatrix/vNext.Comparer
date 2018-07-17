@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -23,30 +24,32 @@ namespace vNext.Comparer.Utils
 
         public static async Task<string> ReadText(string fileName)
         {
-            var fileEncoding = GetEncoding(fileName);
+            var fileEncoding = GetFileEncoding(fileName);
             var bytes = await Read(fileName);
             var utf8Bytes = Encoding.Convert(fileEncoding, Encoding.UTF8, bytes);
-            return Equals(fileEncoding, Encoding.Unicode)
-                ? Encoding.UTF8.GetString(utf8Bytes).Remove(0, 1)
-                : Encoding.UTF8.GetString(utf8Bytes);
+            return NormalizeUtf8(fileEncoding, Encoding.UTF8.GetString(utf8Bytes));
         }
 
-        private static Encoding GetEncoding(string filename)
+        private static string NormalizeUtf8(Encoding encoding, string text)
         {
-            // Read the BOM
-            var bom = new byte[4];
-            using (var file = new FileStream(filename, FileMode.Open, FileAccess.Read))
-            {
-                file.Read(bom, 0, 4);
-            }
+            return !Equals(Encoding.GetEncoding(1251), encoding) ? text.Remove(0, 1) : text;
+        }
 
-            // Analyze the BOM
-            if (bom[0] == 0x2b && bom[1] == 0x2f && bom[2] == 0x76) return Encoding.UTF7;
-            if (bom[0] == 0xef && bom[1] == 0xbb && bom[2] == 0xbf) return Encoding.UTF8;
-            if (bom[0] == 0xff && bom[1] == 0xfe) return Encoding.Unicode; //UTF-16LE
-            if (bom[0] == 0xfe && bom[1] == 0xff) return Encoding.BigEndianUnicode; //UTF-16BE
-            if (bom[0] == 0 && bom[1] == 0 && bom[2] == 0xfe && bom[3] == 0xff) return Encoding.UTF32;
-            return Encoding.GetEncoding(1251);
+        private static Encoding GetFileEncoding(string fileName)
+        {
+            using (var fs = File.OpenRead(fileName))
+            {
+                var cdet = new Ude.CharsetDetector();
+                cdet.Feed(fs);
+                cdet.DataEnd();
+
+                if (cdet.Charset == null)
+                {
+                    throw new ArgumentException("Error in reading charset.");
+                }
+
+                return Encoding.GetEncoding(cdet.Charset);
+            }
         }
     }
 }

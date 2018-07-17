@@ -9,9 +9,9 @@ namespace vNext.Comparer.Commands
 {
     public class UpdateDb : ICommand
     {
-        private static string _dir;
-        private static string _connectionstring;
-        private static bool _isFile;
+        private readonly string _dir;
+        private readonly string _connectionstring;
+        private readonly bool _isFile;
 
         public UpdateDb(IDictionary<string, string> args)
         {
@@ -24,26 +24,32 @@ namespace vNext.Comparer.Commands
         private static void ThrowExceptionForInvalidArgs(IDictionary<string, string> dict)
         {
             if (dict == null)
+            {
                 throw new ArgumentNullException(nameof(dict));
+            }
 
             if (!dict.ContainsKey("CONNECTIONSTRING"))
-                throw new ApplicationException("Need to pass argument: CONNECTIONSTRING");
+            {
+                throw new ArgumentException("Need to pass argument: CONNECTIONSTRING");
+            }
 
             if (!dict.ContainsKey("DIR"))
-                throw new ApplicationException("Need to pass argument: DIR");
+            {
+                throw new ArgumentException("Need to pass argument: DIR");
+            }
         }
 
         public async Task Execute()
         {
-            await RunAsync();
+            await RunAsync().ConfigureAwait(false);
         }
 
-        private static async Task RunAsync()
+        private async Task RunAsync()
         {
             var dirFiles = _isFile ? new []{ _dir } : Directory.GetFiles(_dir, "*.sql");
 
             if (dirFiles.Length == 0)
-                throw new ApplicationException("No scripts in DIR path.");
+                throw new FileNotFoundException("No scripts in DIR path.");
 
             var notExists = (await GetNotExists(_connectionstring, dirFiles))
                 .OrderBy(x => x)
@@ -65,16 +71,20 @@ namespace vNext.Comparer.Commands
             {
                 var objName = Path.GetFileNameWithoutExtension(file);
                 if (!await SqlHelper.IsObjectExists(connectionString, objName))
+                {
                     list.Add(file);
+                }
             }
 
             return list.ToArray();
         }
 
-        private static async Task ProcExists(IEnumerable<string> exists)
+        private async Task ProcExists(IEnumerable<string> exists)
         {
             foreach (var file in exists)
+            {
                 await SqlHelper.ExecuteNonQueryScriptAsync(_connectionstring, await FileHelper.ReadText(file));
+            }
         }
 
         private static void ProcNotExists(IEnumerable<string> notExists)

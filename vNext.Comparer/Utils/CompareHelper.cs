@@ -3,7 +3,6 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
-using vNext.Comparer.Commands;
 
 namespace vNext.Comparer.Utils
 {
@@ -35,7 +34,7 @@ namespace vNext.Comparer.Utils
         {
             var enumerable = diff as Differ[] ?? diff.ToArray();
             const string winmergeuExe = "winmergeu.exe";
-            if (enumerable.Count() == 1)
+            if (enumerable.Length == 1)
             {
                 var objectName = enumerable.First().ObjectName;
                 var leftFilePath = Path.Combine(leftDir, objectName + ".sql");
