@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using vNext.Comparer.Utils;
 
@@ -14,10 +14,10 @@ namespace vNext.Comparer.Commands
             "select distinct SCHEMA_NAME(schema_id) + '.' + name from sys.procedures where type = 'P'";
         private const string LeftDbDir = "leftDb";
         private const string RightDbDir = "rightDb";
-        private static string _leftConnectionString;
-        private static string _rightConnectionString;
-        private static string _query;
-        private static bool _winmerge;
+        private readonly string _leftConnectionString;
+        private readonly string _rightConnectionString;
+        private readonly string _query;
+        private readonly bool _winmerge;
 
 
         public CompareDb(IDictionary<string, string> args)
@@ -32,21 +32,27 @@ namespace vNext.Comparer.Commands
         private static void ThrowExceptionForInvalidArgs(IDictionary<string, string> dict)
         {
             if (dict == null)
+            {
                 throw new ArgumentNullException(nameof(dict));
+            }
 
             if (!dict.ContainsKey("LEFTCONNECTIONSTRING"))
-                throw new ApplicationException("Need to pass argument: LEFTCONNECTIONSTRING");
+            {
+                throw new ArgumentException("Need to pass argument: LEFTCONNECTIONSTRING");
+            }
 
             if (!dict.ContainsKey("RIGHTCONNECTIONSTRING"))
-                throw new ApplicationException("Need to pass argument: LEFTCONNECTIONSTRING");
+            {
+                throw new ArgumentException("Need to pass argument: LEFTCONNECTIONSTRING");
+            }
         }
 
         public async Task Execute()
         {
-            await RunAsync();
+            await RunAsync().ConfigureAwait(false);
         }
 
-        private static async Task RunAsync()
+        private async Task RunAsync()
         {
             var existsInLeft = (await GetExists(_leftConnectionString))
                 .OrderBy(x => x)
@@ -75,10 +81,12 @@ namespace vNext.Comparer.Commands
             ProcDiff(diff);
 
             if (_winmerge && diff.Length >= 1)
+            {
                 CompareHelper.ProcWinMerge(diff, LeftDbDir, RightDbDir);
+            }
         }
 
-        private static async Task<string[]> GetExists(string connectionString)
+        private async Task<string[]> GetExists(string connectionString)
         {
             return (await SqlHelper.GetDbObjects(connectionString, _query)).ToArray();
         }
@@ -86,10 +94,12 @@ namespace vNext.Comparer.Commands
         private static void ProcNotExists(IEnumerable<string> notExists, string rightOrLeft)
         {
             foreach (var notExist in notExists)
+            {
                 Console.WriteLine($"Not in {rightOrLeft} DB    {notExist}");
+            }
         }
 
-        private static async Task<IEnumerable<CompareHelper.Differ>> GetDiff(IEnumerable<string> exists)
+        private async Task<IEnumerable<CompareHelper.Differ>> GetDiff(IEnumerable<string> exists)
         {
             var list = new List<CompareHelper.Differ>();
             foreach (var objectName in exists)
@@ -109,10 +119,10 @@ namespace vNext.Comparer.Commands
         private static void WriteInDirectory(CompareHelper.Differ differ)
         {
             var path = Path.Combine(LeftDbDir, differ.ObjectName + ".sql");
-            File.WriteAllText(path, differ.LeftOriginalText);
+            File.WriteAllText(path, differ.LeftOriginalText, Encoding.UTF8);
 
             path = Path.Combine(RightDbDir, differ.ObjectName + ".sql");
-            File.WriteAllText(path, differ.RightOriginalText);
+            File.WriteAllText(path, differ.RightOriginalText, Encoding.UTF8);
         }
 
         private static void PrepareDirectory()
