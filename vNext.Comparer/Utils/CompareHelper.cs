@@ -8,6 +8,7 @@ namespace vNext.Comparer.Utils
 {
     public static class CompareHelper
     {
+
         public struct Differ
         {
             public string ObjectName { get; }
@@ -22,14 +23,23 @@ namespace vNext.Comparer.Utils
 
             }
         }
-
-        public static string AdjustForCompare(string content)
+        /// <summary>
+        /// Returns the string without script header and white space characters in upper form.
+        /// </summary>
+        /// <param name="script">Script to adjust</param>
+        /// <returns></returns>
+        public static string AdjustForCompare(string script)
         {
             var reHeader = new Regex(@"^([\s\S])*(ALTER|CREATE)\s+PROCEDURE");
-            return Regex.Replace(reHeader.Replace(content, string.Empty), @"\s+", string.Empty)
+            return Regex.Replace(reHeader.Replace(script, string.Empty), @"\s+", string.Empty)
                 .ToUpper();
         }
-
+        /// <summary>
+        /// Opens the WinMerge to check differences in files or directories
+        /// </summary>
+        /// <param name="diff">The array of Differ struct</param>
+        /// <param name="leftDir">Path to the left directory</param>
+        /// <param name="rightDir">Path to the right directory</param>
         public static void ProcWinMerge(IEnumerable<Differ> diff, string leftDir, string rightDir)
         {
             var enumerable = diff as Differ[] ?? diff.ToArray();

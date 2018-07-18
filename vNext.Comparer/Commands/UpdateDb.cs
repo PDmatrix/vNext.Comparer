@@ -18,7 +18,7 @@ namespace vNext.Comparer.Commands
             ThrowExceptionForInvalidArgs(args);
             _connectionstring = args["CONNECTIONSTRING"];
             _dir = args["DIR"];
-            _isFile = _dir.EndsWith(".sql");
+            _isFile = !File.GetAttributes(_dir).HasFlag(FileAttributes.Directory);
         }
 
         private static void ThrowExceptionForInvalidArgs(IDictionary<string, string> dict)
@@ -72,7 +72,7 @@ namespace vNext.Comparer.Commands
             foreach (var file in dirFiles)
             {
                 var objName = Path.GetFileNameWithoutExtension(file);
-                if (!await SqlHelper.IsObjectExists(connectionString, objName).ConfigureAwait(false))
+                if (!await SqlHelper.IsObjectExistsAsync(connectionString, objName).ConfigureAwait(false))
                 {
                     list.Add(file);
                 }
@@ -85,7 +85,7 @@ namespace vNext.Comparer.Commands
         {
             foreach (var file in exists)
             {
-                await SqlHelper.ExecuteNonQueryScriptAsync(_connectionstring, await FileHelper.ReadText(file).ConfigureAwait(false));
+                await SqlHelper.ExecuteNonQueryScriptAsync(_connectionstring, await FileHelper.ReadTextUtf8Async(file).ConfigureAwait(false));
             }
         }
 
