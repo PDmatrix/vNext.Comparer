@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using vNext.Comparer.Utils;
 
@@ -11,7 +10,7 @@ namespace vNext.Comparer.Commands
     internal class CompareDb : ICommand
     {
         private const string AllProcQuery =
-            "select distinct SCHEMA_NAME(schema_id) + '.' + name from sys.procedures where type = 'P'";
+            "SELECT DISTINCT SCHEMA_NAME(schema_id) + '.' + name FROM sys.procedures WHERE type = 'P'";
         private const string LeftDbDir = "leftDb";
         private const string RightDbDir = "rightDb";
         private readonly string _leftConnectionString;
@@ -43,7 +42,7 @@ namespace vNext.Comparer.Commands
 
             if (!dict.ContainsKey("RIGHTCONNECTIONSTRING"))
             {
-                throw new ArgumentException("Need to pass argument: LEFTCONNECTIONSTRING");
+                throw new ArgumentException("Need to pass argument: RIGHTCONNECTIONSTRING");
             }
         }
 
@@ -77,7 +76,7 @@ namespace vNext.Comparer.Commands
             ProcNotExists(notExistsInLeft, "Right");
             ProcNotExists(notExistsInRight, "Left");
 
-            var diff = (await GetDiff(exitstInBoth)).ToArray();
+            var diff = (await GetDiff(exitstInBoth).ConfigureAwait(false)).ToArray();
             ProcDiff(diff);
 
             if (_winmerge && diff.Length >= 1)
@@ -88,7 +87,7 @@ namespace vNext.Comparer.Commands
 
         private async Task<string[]> GetExists(string connectionString)
         {
-            return (await SqlHelper.GetDbObjects(connectionString, _query).ConfigureAwait(false)).ToArray();
+            return (await SqlHelper.GetDbObjectsAsync(connectionString, _query).ConfigureAwait(false)).ToArray();
         }
 
         private static void ProcNotExists(IEnumerable<string> notExists, string rightOrLeft)
@@ -104,8 +103,8 @@ namespace vNext.Comparer.Commands
             var list = new List<CompareHelper.Differ>();
             foreach (var objectName in exists)
             {
-                var leftSqlTextOriginal = await SqlHelper.GetObjectDefinition(_leftConnectionString, objectName).ConfigureAwait(false);
-                var rightSqlTextOriginal = await SqlHelper.GetObjectDefinition(_rightConnectionString, objectName).ConfigureAwait(false);
+                var leftSqlTextOriginal = await SqlHelper.GetObjectDefinitionAsync(_leftConnectionString, objectName).ConfigureAwait(false);
+                var rightSqlTextOriginal = await SqlHelper.GetObjectDefinitionAsync(_rightConnectionString, objectName).ConfigureAwait(false);
                 var leftSqlText = CompareHelper.AdjustForCompare(leftSqlTextOriginal);
                 var rightSqlText = CompareHelper.AdjustForCompare(rightSqlTextOriginal);
 
@@ -119,38 +118,20 @@ namespace vNext.Comparer.Commands
             return list;
         }
 
-        private static void WriteInDirectory(CompareHelper.Differ differ)
+        private static void WriteInFile(CompareHelper.Differ differ)
         {
-            var path = Path.Combine(LeftDbDir, differ.ObjectName + ".sql");
-            File.WriteAllText(path, differ.LeftOriginalText, Encoding.UTF8);
-
-            path = Path.Combine(RightDbDir, differ.ObjectName + ".sql");
-            File.WriteAllText(path, differ.RightOriginalText, Encoding.UTF8);
-        }
-
-        private static void PrepareDirectory()
-        {
-            if (Directory.Exists(LeftDbDir))
-            {
-                Directory.Delete(LeftDbDir, true);
-            }
-
-            if (Directory.Exists(RightDbDir))
-            {
-                Directory.Delete(RightDbDir, true);
-            }
-
-            Directory.CreateDirectory(LeftDbDir);
-            Directory.CreateDirectory(RightDbDir);
+            FileHelper.WriteInFile(Path.Combine(LeftDbDir, differ.ObjectName + ".sql"), differ.LeftOriginalText);
+            FileHelper.WriteInFile(Path.Combine(RightDbDir, differ.ObjectName + ".sql"), differ.RightOriginalText);
         }
 
         private static void ProcDiff(IEnumerable<CompareHelper.Differ> diff)
         {
-            PrepareDirectory();
+            FileHelper.CreateDirectory(LeftDbDir);
+            FileHelper.CreateDirectory(RightDbDir);
             foreach (var differ in diff)
             {
                 Console.WriteLine(@"Diff    {0}", differ.ObjectName);
-                WriteInDirectory(differ);
+                WriteInFile(differ);
             }
         }
     }

@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using vNext.Comparer.Utils;
 
@@ -80,7 +79,7 @@ namespace vNext.Comparer.Commands
             foreach (var file in dirFiles)
             {
                 var objName = Path.GetFileNameWithoutExtension(file);
-                if (!await SqlHelper.IsObjectExists(connectionString, objName))
+                if (!await SqlHelper.IsObjectExistsAsync(connectionString, objName).ConfigureAwait(false))
                 {
                     list.Add(file);
                 }
@@ -96,9 +95,9 @@ namespace vNext.Comparer.Commands
             {
                 var objectName = Path.GetFileNameWithoutExtension(file);
 
-                var fileTextOriginal = await FileHelper.ReadText(file).ConfigureAwait(false);
+                var fileTextOriginal = await FileHelper.ReadTextUtf8Async(file).ConfigureAwait(false);
                 var fileText = CompareHelper.AdjustForCompare(fileTextOriginal);
-                var sqlTextOriginal = await SqlHelper.GetObjectDefinition(_connectionstring, objectName).ConfigureAwait(false);
+                var sqlTextOriginal = await SqlHelper.GetObjectDefinitionAsync(_connectionstring, objectName).ConfigureAwait(false);
                 var sqlText = CompareHelper.AdjustForCompare(sqlTextOriginal);
 
                 if (sqlText != fileText)
@@ -120,16 +119,11 @@ namespace vNext.Comparer.Commands
 
         private static void ProcDiff(IEnumerable<CompareHelper.Differ> diff)
         {
-            if (Directory.Exists(DbDir))
-            {
-                Directory.Delete(DbDir, true);
-            }
-            Directory.CreateDirectory(DbDir);
+            FileHelper.CreateDirectory(DbDir);
 
             foreach (var differ in diff)
             {
-                var path = Path.Combine(DbDir, differ.ObjectName + ".sql");
-                File.WriteAllText(path, differ.LeftOriginalText, Encoding.UTF8);
+                FileHelper.WriteInFile(Path.Combine(DbDir, differ.ObjectName + ".sql"), differ.LeftOriginalText);
                 Console.WriteLine(@"Diff    {0}", differ.ObjectName);
             }
         }
