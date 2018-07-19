@@ -78,8 +78,8 @@ namespace vNext.Comparer.Commands
             var list = new List<string>();
             foreach (var file in dirFiles)
             {
-                var objName = Path.GetFileNameWithoutExtension(file);
-                if (!await SqlHelper.IsObjectExistsAsync(connectionString, objName).ConfigureAwait(false))
+                var objectName = Path.GetFileNameWithoutExtension(file);
+                if (!await SqlHelper.IsObjectExistsAsync(connectionString, objectName).ConfigureAwait(false))
                 {
                     list.Add(file);
                 }
