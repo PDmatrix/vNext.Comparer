@@ -71,8 +71,8 @@ namespace vNext.Comparer.Commands
             var list = new List<string>();
             foreach (var file in dirFiles)
             {
-                var objName = Path.GetFileNameWithoutExtension(file);
-                if (!await SqlHelper.IsObjectExistsAsync(connectionString, objName).ConfigureAwait(false))
+                var objectName = Path.GetFileNameWithoutExtension(file);
+                if (!await SqlHelper.IsObjectExistsAsync(connectionString, objectName).ConfigureAwait(false))
                 {
                     list.Add(file);
                 }
@@ -93,8 +93,8 @@ namespace vNext.Comparer.Commands
         {
             foreach (var file in notExists)
             {
-                var objName = Path.GetFileNameWithoutExtension(file);
-                Console.WriteLine($"Not in DB    {objName}");
+                var objectName = Path.GetFileNameWithoutExtension(file);
+                Console.WriteLine($"Not in DB    {objectName}");
             }
         }
     }
