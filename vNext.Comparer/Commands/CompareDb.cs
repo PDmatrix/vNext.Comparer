@@ -10,7 +10,7 @@ namespace vNext.Comparer.Commands
     internal class CompareDb : ICommand
     {
         private const string AllProcQuery =
-            "SELECT DISTINCT SCHEMA_NAME(schema_id) + '.' + name FROM sys.procedures WHERE type = 'P'";
+            "SELECT DISTINCT SCHEMA_NAME(schema_id) + '.' + name FROM sys.objects WHERE type = 'P'";
         private const string LeftDbDir = "leftDb";
         private const string RightDbDir = "rightDb";
         private readonly string _leftConnectionString;

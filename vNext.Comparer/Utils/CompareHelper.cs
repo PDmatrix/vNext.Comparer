@@ -30,7 +30,7 @@ namespace vNext.Comparer.Utils
         /// <returns></returns>
         public static string AdjustForCompare(string script)
         {
-            var reHeader = new Regex(@"^([\s\S])*(ALTER|CREATE)\s+PROCEDURE");
+            var reHeader = new Regex(@"^([\s\S])*(ALTER|CREATE)\s+(PROCEDURE|TABLE|VIEW)", RegexOptions.IgnoreCase);
             return Regex.Replace(reHeader.Replace(script, string.Empty), @"\s+", string.Empty)
                 .ToUpper();
         }
