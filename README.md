@@ -1,6 +1,5 @@
 # vNext.Comparer
 [![Build Status](https://travis-ci.org/PDmatrix/vNext.Comparer.svg?branch=master)](https://travis-ci.org/PDmatrix/vNext.Comparer)
-
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/1479838fe39348bf85a11e05310cdd57)](https://www.codacy.com/app/PDmatrix/vNext.Comparer?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=PDmatrix/vNext.Comparer&amp;utm_campaign=Badge_Grade)
 
 This utility will help you automate the work with the MS SQL database.
