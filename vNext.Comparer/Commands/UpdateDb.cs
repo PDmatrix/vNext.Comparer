@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Threading.Tasks;
 using vNext.Comparer.Utils;
 
@@ -53,32 +52,7 @@ namespace vNext.Comparer.Commands
                 throw new FileNotFoundException("No scripts in DIR path.");
             }
 
-            var notExists = (await GetNotExists(_connectionstring, dirFiles).ConfigureAwait(false))
-                .OrderBy(x => x)
-                .ToArray();
-
-            var exists = dirFiles
-                .Except(notExists)
-                .OrderBy(x => x)
-                .ToArray();
-
-            await ProcExists(exists).ConfigureAwait(false);
-            ProcNotExists(notExists);
-        }
-
-        private static async Task<string[]> GetNotExists(string connectionString, IEnumerable<string> dirFiles)
-        {
-            var list = new List<string>();
-            foreach (var file in dirFiles)
-            {
-                var objectName = Path.GetFileNameWithoutExtension(file);
-                if (!await SqlHelper.IsObjectExistsAsync(connectionString, objectName).ConfigureAwait(false))
-                {
-                    list.Add(file);
-                }
-            }
-
-            return list.ToArray();
+            await ProcExists(dirFiles).ConfigureAwait(false);
         }
 
         private async Task ProcExists(IEnumerable<string> exists)
@@ -86,15 +60,6 @@ namespace vNext.Comparer.Commands
             foreach (var file in exists)
             {
                 await SqlHelper.ExecuteNonQueryScriptAsync(_connectionstring, await FileHelper.ReadTextUtf8Async(file).ConfigureAwait(false));
-            }
-        }
-
-        private static void ProcNotExists(IEnumerable<string> notExists)
-        {
-            foreach (var file in notExists)
-            {
-                var objectName = Path.GetFileNameWithoutExtension(file);
-                Console.WriteLine($"Not in DB    {objectName}");
             }
         }
     }

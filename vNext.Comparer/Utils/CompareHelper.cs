@@ -50,12 +50,12 @@ namespace vNext.Comparer.Utils
                 var leftFilePath = Path.Combine(leftDir, objectName + ".sql");
                 var rightFilePath = Path.Combine(rightDir, objectName + ".sql");
 
-                var arguments = $@"""{leftFilePath}"" ""{rightFilePath}""";
+                var arguments = $@"/f *.* ""{leftFilePath}"" ""{rightFilePath}""";
                 Process.Start(winmergeuExe, arguments);
             }
             else
             {
-                Process.Start(winmergeuExe, $"/r {leftDir} {rightDir}");
+                Process.Start(winmergeuExe, $"/f *.* /r {leftDir} {rightDir}");
             }
         }
     }
