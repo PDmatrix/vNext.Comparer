@@ -73,7 +73,7 @@ namespace vNext.Comparer.Utils
             // Split by "GO" statements
             var statements = Regex.Split(
                 sqlScript,
-                @"^[\t\r\n]*GO[\t\r\n]*\d*[\t\r\n]*(?:--.*)?$",
+                @"^[\s\t]*GO[\s\t]*\d*[\s\t]*(\-\-[^\r]*?)*$",
                 RegexOptions.Multiline |
                 RegexOptions.IgnorePatternWhitespace |
                 RegexOptions.IgnoreCase);
